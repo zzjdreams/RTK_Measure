@@ -1,0 +1,42 @@
+<!--pages/map/map.wxml-->
+<view class="section" style="display:{{section_display}}">
+  <input bindinput="bindInput" placeholder="搜索" focus="true" />
+</view>
+<view bindtouchstart="bindSearch" data-keywords="{{i.name}}" class="text_box" wx:for="{{tips}}" wx:for-item="i" wx:key="index">
+  {{i.name}}
+</view>
+<map id="map" longitude="{{longitude}}" latitude="{{latitude}}" scale="{{scale}}" controls="{{controls}}" bindcontroltap="controltap" markers="{{markers}}" bindmarkertap="markertap" polyline="{{polyline}}" bindregionchange="regionchange" circle="{{circle}}"
+  show-location="{{control_location}}" show-compass="{{control_compass}}" subkey="{{subkey}}" style="height:{{mapHight}}vh">
+  <cover-view class="controlBox fullscreen" bindtap="fullScreen">
+    <cover-image class="control fullscreen" src="{{screenInfo[controlIndex].src}}"></cover-image>
+    <cover-view>{{screenInfo[controlIndex].name}}</cover-view>
+  </cover-view>
+  <view class="left-box">
+    <cover-view class="controlBox changeMod">
+      <cover-image class="control changeMod" src="../../images/view_change.svg"></cover-image>
+      <cover-view>切换</cover-view>
+    </cover-view>
+    <cover-view class="controlBox" bindtap="drawMarker">
+      <cover-image class="control local" src="../../images/local.svg"></cover-image>
+      <cover-view>定位</cover-view>
+    </cover-view>
+  </view>
+  <view class="right-box">
+    <cover-view class="controlBox" bindtap="drawMarker">
+      <cover-image class="control marker" src="../../images/marker.svg"></cover-image>
+      <cover-view>打点</cover-view>
+    </cover-view>
+    <cover-view class="controlBox">
+      <cover-image class="control drawLine" src="../../images/drawLine.svg"></cover-image>
+      <cover-view>连线</cover-view>
+    </cover-view>
+  </view>
+</map>
+
+
+  <view wx:for="{{pointMsg}}" wx:key="index" style="border-bottom:#000 solid 2px">
+    <view>挂载点： {{pointMsg[index].mountpoint}}</view>
+    <view>国家： {{pointMsg[index].country}}</view>
+    <view>经度： {{pointMsg[index].latitude}}</view>
+    <view>纬度： {{pointMsg[index].longitude}}</view>
+  </view>

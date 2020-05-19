@@ -1,0 +1,22 @@
+{
+  "name": "rtkmeasure",
+  "version": "1.0.0",
+  "description": "use the tool RTK to measure something",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zzjdreams/RTK_Measure.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zzjdreams/RTK_Measure/issues"
+  },
+  "homepage": "https://github.com/zzjdreams/RTK_Measure#readme",
+  "dependencies": {
+    "ol": "^6.3.1"
+  }
+}

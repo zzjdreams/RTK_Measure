@@ -1,0 +1,25 @@
+{
+  "pages": [
+      "pages/socketTest/socketTest",
+    "pages/bleSearch/bleSearch",
+    "pages/map/map",
+    "pages/rtkIndex/rtkIndex",
+    "pages/index/index",
+   
+    "pages/logs/logs"
+  
+  ],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "您的位置信息将用于设备定位和蓝牙操作"
+    }
+  },
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "WeChat",
+    "navigationBarTextStyle": "black"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

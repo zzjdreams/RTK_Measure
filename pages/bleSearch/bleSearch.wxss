@@ -1,0 +1,81 @@
+/* pages/bleSearch/bleSearch.wxss */
+
+page, .page {
+  width: 100%;
+  height: 100%;
+}
+
+.userinfo{
+  display: flex;
+  flex-direction: row;
+  width: 55%;
+  height: 100px;
+   align-items:center;/*垂直居中*/
+  justify-content: center;/*水平居中*/
+}
+
+.userImg{
+  width: 80px;
+  height: 80px;
+}
+
+.userinfo-avatar{
+  width: 80px;
+  height: 80px;
+}
+
+.userName{
+  background: white;
+  text-align: center;
+}
+
+.page-bottom {
+  height: 100%;
+  width: 750rpx;
+  position: fixed;
+  background-color: white;
+  z-index: 0;
+}
+
+.page-top {
+  height: 100%;
+  position: fixed;
+  width: 750rpx;
+  background-color: yellow;
+  z-index: 0;
+  transition: All 0.4s ease;
+  -webkit-transition: All 0.4s ease;
+}
+
+.wc{
+  height: 100px;
+}
+
+.tab{
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.device_list {
+  display: block;
+  height: 70%;
+  /* margin-top: 0; */
+  margin: auto;
+  border: 1px solid #EEE;
+  border-radius: 5px;
+  width: 80%;
+}
+.device_item {
+  border-bottom: 1px solid #EEE;
+  padding: 10px;
+  color: rgba(102, 102, 102, 0.664);
+}
+.device_item_hover {
+  background-color: rgba(0, 0, 0, .1);
+}
+
+.c-state1 {
+  transform: rotate(0deg) scale(1) translate(55%, 0%);
+  -webkit-transform: rotate(0deg) scale(1) translate(55%, 0%);
+}

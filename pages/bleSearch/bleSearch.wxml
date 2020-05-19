@@ -1,0 +1,52 @@
+<wxs module="utils">
+  module.exports.max = function(n1, n2) {
+    return Math.max(n1, n2)
+  }
+  module.exports.len = function(arr) {
+    arr = arr || []
+    return arr.length
+  }
+</wxs>
+<view class="page">
+  <view class="page-bottom">
+
+    <view class="userinfo">
+      <block wx:if="{{!hasUserInfo && canIUse}}" class="userBox">
+       <image class="userImg" src="../../images/view_change.svg"></image>
+       <button class="userName btn" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 未登录 </button>
+      </block>
+      <block wx:else class="userBox">
+        <image class="userImg" bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
+        <text class="userName tv" class="userinfo-nickname">{{userInfo.nickName}}</text>
+      </block>
+    </view>
+
+    <view class="page-content">
+      <view class="wc" bindtap="startSearch">
+        <text  >第一个item1</text>
+      </view>
+      <view class="wc"  bindtap="stopSearch">
+        <text>第二个item2</text>
+      </view>
+      <view class="wc">
+        <text>第三个item3</text>
+      </view>
+      <view class="wc">
+        <text>第四个item4</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="page-top {{open ? 'c-state1' : ''}}"  bindtouchmove="tap_drag" bindtouchend="tap_end" bindtouchstart="tap_start">
+    <image class="tab" bindtap="tap_ch" src="../../images/view_change.svg"></image>
+    <scroll-view class="device_list" scroll-y scroll-with-animation>
+      <view wx:for="{{devices}}" wx:key="index" data-device-id="{{item.deviceId}}" id="{{index}}" data-name="{{item.name || item.localName}}" bindtap="createBLEConnection" class="device_item" hover-class="device_item_hover">
+        <view style="font-size: 18px; color: #f00;">名字</view>
+        <view style="font-size: 16px; color: #333;">{{item.name}}</view>
+        <view style="font-size: 10px">信号强度: {{item.RSSI}}dBm ({{utils.max(0, item.RSSI + 100)}}%)</view>
+        <view style="font-size: 10px">UUID: {{item.deviceId}}</view>
+        <!-- <view style="font-size: 10px">Service数量: {{utils.len(item.advertisServiceUUIDs)}}</view> -->
+      </view>
+    </scroll-view>
+  </view>
+</view>
