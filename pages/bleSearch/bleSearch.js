@@ -4,10 +4,13 @@ const myWatch = require("../../utils/watch.js");
 const base64 = require("../../utils/Base64Helper.js");
 const writeHelper = require('../../utils/WriteHelper.js')
 import BleHelper from '../../BLE/BleHelper.js'
-var ble = new BleHelper();
+import ParseData from '../../utils/ParseData.js'
+
+var ble=new BleHelper();
+var parse=new ParseData();
 var isMove = false;
 
-
+var s='';
 Page({
 
   /**
@@ -30,21 +33,9 @@ Page({
       deviceId: 2
     }, {
       deviceId: 2
-    }, {
-      deviceId: 2
-    }, {
-      deviceId: 2
-    }, {
-      deviceId: 2
-    }, {
-      deviceId: 2
-    }, {
-      deviceId: 2
-    }, {
-      deviceId: 2
-    }, {
-      deviceId: 2
-    }]
+    }],
+    commdata:'$ICEGPS,FACTORY,GETVER*48',
+    receiveData:''
   },
 
   /**
@@ -52,18 +43,27 @@ Page({
    */
   onLoad: function(options) {
     this.showUserInfo();
-
-    // ble.openBluetoothAdapter();
-    // ble.onBluetoothAdapterStateChange();
+    // parse.onReceiveBLE();
+    // parse.outputMsg ="$ICEGPS,FACTORY,GETFWVER*59\r\n"
+   
+  
     // console.log(ble)
-    // myWatch.watch(app.bleListener, "devices", this.bleList);
+    myWatch.watch(app.bleListener, "devices", this.bleList);
+    // myWatch.watch(app.bleListener, "receiveData", this.bleReceive);
+
+    for(var i =0;i<1000;i++){
+      s+=i+'\t';
+      if(i%10==0){
+        s+='\r\n';
+      }
+    }
   },
 
   /**
    * 生命周期函数--监听页面初次渲染完成
    */
   onReady: function() {
-
+   
   },
 
   /**
@@ -87,19 +87,6 @@ Page({
 
   },
 
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh: function() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom: function() {
-
-  },
 
   /**
    * 用户点击右上角分享
@@ -230,22 +217,64 @@ Page({
     this.setData({
       devices: devices_
     })
-    console.info(devices_)
+    // console.info(devices_)
   },
+
+  bleReceive:function(data){
+    this.setData({
+      receiveData: data
+    })
+  },
+
   startSearch() {
+    ble.openBluetoothAdapter();
+    ble.onBluetoothAdapterStateChange();
     ble.startBluetoothDevicesDiscovery();
   },
   stopSearch() {
-    ble.stopBluetoothDevicesDiscovery();
+    if(ble.discovering_){
+      ble.stopBluetoothDevicesDiscovery();
+    }
+    if(ble.isConnected){
+      ble.closeBLEConnection();
+      app.bleListener.devices=[];
+    }
+    ble.closeBluetoothAdapter();
   },
   createBLEConnection(e) {
-    // ble.createBLEConnection(e.currentTarget.dataset.deviceId)
+    ble.createBLEConnection(e.currentTarget.dataset.deviceId)
     console.log(e.currentTarget.dataset.deviceId);
     // ble.writeBLECharacteristicValue(writeHelper.write(writeHelper.GET_VER))
-    new Promise(function (resolve, reject) {
-      ble.createBLEConnection(e.currentTarget.dataset.deviceId)
-    }).then(ble.writeBLECharacteristicValue(writeHelper.write(writeHelper.GET_VER)));
+    // new Promise(function (resolve, reject) {
+    //   ble.createBLEConnection(e.currentTarget.dataset.deviceId)
+    // }).then(ble.writeBLECharacteristicValue(writeHelper.write(writeHelper.GET_VER)));
   },
+  sendMsg(){
+    // console.log(s)
+  //  console.log(writeHelper.stringToBytes(s))
+    // ble.writeBLECharacteristicValue( writeHelper.stringToBytes(s))
+    ble.writeBLECharacteristicValue( writeHelper.stringToBytes(this.data.commdata+'\r\n'))
+  },
+  test(){
+    ble.setBLEMTU(50);
+    parse.transit("$ICEGPS,VERSION,AS210BD,123456789,1.6.1.6_test23a,UB482,P900,1577694030*20\r\n")
+  },
+  keylistener(e){
+    // console.log(e.detail.value)
+    this.setData({
+      commdata:e.detail.value
+    })
+  },
+  clearComm(){
+    this.setData({
+      commdata:''
+    })
+    app.bleListener.receiveData='';
+    
+  }
 
 
 })
+
+
+    

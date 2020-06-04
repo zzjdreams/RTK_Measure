@@ -1,13 +1,13 @@
 {
   "pages": [
-      "pages/socketTest/socketTest",
     "pages/bleSearch/bleSearch",
+    "pages/socketTest/socketTest",
+    
     "pages/map/map",
     "pages/rtkIndex/rtkIndex",
     "pages/index/index",
    
     "pages/logs/logs"
-  
   ],
   "permission": {
     "scope.userLocation": {

@@ -82,6 +82,7 @@ function delay(ms, res) {
   return new Promise(function(resolve, reject) {
     setTimeout(function() {
       resolve(res);
+      reject(res);
     }, ms);
   });
 }
@@ -291,6 +292,10 @@ function repeatSendData(judgement,comm){
   }
 }
 
+function waitWriteData(comm){
+  
+}
+
 // repeatSendData(a>b,'第1组')
 // repeatSendData(a == b, '第2组')
 // repeatSendData(a < b, '第3组')
@@ -303,6 +308,7 @@ module.exports = {
   delay: delay,
   // writeFirstComm: writeFirstComm,
   writeHexComm: writeHexComm,
+  stringToBytes:stringToBytes,
 
   removeArray: removeArray,
   DIS_CONNECT: DIS_CONNECT,

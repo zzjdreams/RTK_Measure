@@ -1,16 +1,29 @@
 const strUtil=require('./StrUtil.js');
-const watch=require('./watch.js')
+var app=getApp();
 
-var ParseData = function ParseData(opt_options){
-  var options = opt_options || {};
+var ParseData = function ParseData(){
+  var that=this;
   this.strString='';
   this.working=false;
   this.isHead=false;
   this.commArry=[];
   this.outputMsg="";
+
+  this.index=0;
+}
+
+ParseData.prototype.transit = function (str){
+  // app.bleListener.receiveData=str;
+  var arr = separateData(str);
+  if (arr[2] === checkSum(str.slice(0, str.indexOf('*')))) {
+    this.asciiManger(arr[0], arr[1], arr[2]);
+  }  
+  // this.outputMsg=str ;
 }
 
 ParseData.prototype.parseArray=function(arrayBuffer){
+ 
+  
   var str=strUtil.arrayBuffer2String(arrayBuffer);
   if(str.includes('$')){
     this.isHead=true;
@@ -21,30 +34,49 @@ ParseData.prototype.parseArray=function(arrayBuffer){
   }
   if(this.isHead){
     this.strString+=str;
-    if (this.strString.includes('\r\n')) {
-      if (this.strString.lastIndexOf("$") > this.strString.indexOf('\r\n')){
+    if (this.strString.includes('\n')) {
+      if (this.strString.lastIndexOf("$") > this.strString.indexOf('\n')){
         this.isHead=true;
-        this.commArry.push(this.strString.slice(0, this.strString.lastIndexOf("$")));
-        this.outputMsg = this.strString.slice(0, this.strString.lastIndexOf("$"));
+        // console.log('str1', this.strString.slice(0, this.strString.lastIndexOf("$")));
+        // this.commArry.push(this.strString.slice(0, this.strString.lastIndexOf("$")));
+        this.transit(this.strString.slice(0, this.strString.lastIndexOf("$"))) ;
+        
         this.strString = this.strString.slice(this.strString.lastIndexOf("$"));
+        // console.log('拼接后：', this.strString);
       }else{
+      
         this.isHead = false;
-        this.commArry.push(this.strString);
-        this.outputMsg = this.strString;
+        // this.commArry.push(this.strString);
+        // console.log('str', this.strString);
+        this.transit(this.strString);
+        console.log('拼接后：', this.strString);
         this.strString="";
+        if(this.index==1){
+          console.time('lookMe')
+        }
+        this.index++;
+        if(this.index==400){
+          console.timeEnd('lookMe')
+        }
       }
     }
   }
 }
 
 ParseData.prototype.onReceiveBLE=function(){
-  watch.watchData(this, "outputMsg", this.asciiManger)
+  watchData(this, "outputMsg", this.asciiManger)
+  setTimeout(()=>{
+    this.outputMsg = "$ICEGPS,FACTORY,GETUID*51\r\n"
+  },3000)
+  console.log(this.outputMsg);
+  
 }
 
 ParseData.prototype.asciiManger=function(head,data,foot){
-  var dataArr=data.split(',');
+  var dataArr = data.split(',');
   if(head=='$ICEGPS'){
-    console.log(data)
+    console.log('==data===',data)
+    
   }
 }
 
@@ -59,6 +91,7 @@ function separateData(value){
 function watchData(obj, name, method) {
   let temp = null;
   var arr;
+  console.log(obj,obj.outputMsg)
   Object.defineProperty(obj, name, {
     configurable: true,
     enumerable: true,
@@ -88,3 +121,17 @@ function checkSum(s) {
 
 
 export default ParseData;
+
+
+// function a(str,fn){
+//   if(typeof(str)=="string"){
+//     console.log(str)
+//   }
+//   if(typeof(fn)=="function"){
+//     fn(str)
+//   }
+// }
+
+// function f(res){
+//   console.log('到你',res)
+// }

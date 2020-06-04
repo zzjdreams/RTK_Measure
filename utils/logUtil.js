@@ -1,4 +1,4 @@
-var isDebug = false; //控制是否打印日志的开关
+var isDebug ; //控制是否打印日志的开关
 var loadingIsShow = false;
 
 var showTimer;
@@ -9,6 +9,12 @@ var showTimer;
  * envVersion: ‘release’, //正式版
  * console.log('envVersion', __wxConfig.envVersion);
  */
+
+if (__wxConfig.envVersion =='release'){
+  isDebug=false;
+}else{
+  isDebug=true;
+}
 
 function debugToast(title) { //显示Toast
   if (isDebug) {
@@ -34,7 +40,7 @@ function showToast(title) { //显示Toast
   wx.showToast({
     title: title,
     icon: 'none',
-    duration: 2000,
+    duration: 2500,
     mask: true,
   })
   return;
@@ -56,23 +62,26 @@ function showLoading(title) {
   } else {
     clearTimeout(showTimer);
     showTimer=setTimeout(()=>{
-      hideLoading()
-    },60000)
+      hideLoading();
+      showLoading=false;
+    },10000)
     if (!loadingIsShow) {
       wx.showLoading({
         title: title,
         mask: true
       })
 
-      loadingIsShow: true
+      loadingIsShow=true
 
     }
   }
 }
 
 function hideLoading() {
-  wx.hideLoading();
-  loadingIsShow: false
+  if(loadingIsShow){
+    wx.hideLoading();
+    loadingIsShow= false
+  }
 }
 
 function showModal(title, content) {

@@ -2,8 +2,19 @@ const err = require('./errMsg.js')
 const app=getApp();
 const logUtil=require('../utils/logUtil.js')
 const writeHelper=require('../utils/WriteHelper.js')
+import ParseData  from '../utils/ParseData.js' 
+const strUtil = require('../utils/StrUtil.js');
 
 var discoverTimer;
+var clearDataTimer;
+
+/**
+ *  central	主机模式	
+    peripheral	丛机模式
+ */
+const bleMode='peripheral';
+
+var parse = new ParseData();
 
 var BleHelper = function BleHelper(opt_options){
   var options = opt_options || {};
@@ -16,7 +27,9 @@ var BleHelper = function BleHelper(opt_options){
   this.discovering_=false;
   this.isConnected=false;
   this.canWrite=false;
-  this.loadingIsShow=false;
+  
+  this.dataContainer=[];
+  this.mtu_=20;
 }
 
 BleHelper.prototype.setAvailable=function(avail){
@@ -31,7 +44,7 @@ BleHelper.prototype.setAvailable=function(avail){
 BleHelper.prototype.openBluetoothAdapter = function () {
   wx.openBluetoothAdapter({
     //蓝牙模式，可作为主/从设备，仅 iOS 需要。
-    //mode:
+    mode:bleMode,
     success: function (res) {
       console.info('success', res)
     },
@@ -74,7 +87,7 @@ BleHelper.prototype.startBluetoothDevicesDiscovery = function () {
   }
   discoverTimer=setTimeout(()=>{
     that.stopBluetoothDevicesDiscovery()
-  },60000)
+  },10000)
 
   this.discovering_=true;
   wx.startBluetoothDevicesDiscovery({
@@ -83,10 +96,10 @@ BleHelper.prototype.startBluetoothDevicesDiscovery = function () {
     //services:
 
     //是否允许重复上报同一设备。如果允许重复上报，则 wx.onBlueToothDeviceFound 方法会多次上报同一设备，但是 RSSI 值会有不同。
-    allowDuplicatesKey:true,
+    // allowDuplicatesKey:true,
 
     //上报设备的间隔。0 表示找到新设备立即上报，其他数值根据传入的间隔上报。
-    //interval:
+    // interval:
     success: function (res) {
       console.info('success', res);
       that.onBluetoothDeviceFound();
@@ -154,7 +167,7 @@ BleHelper.prototype.createBLEConnection = function (deviceId) {
   }
   logUtil.showLoading('连接中...');
   that.deviceId_=deviceId;
-  console.log('deviceId_', that.deviceId_)
+  // console.log('deviceId_', that.deviceId_)
   wx.createBLEConnection({
     deviceId: that.deviceId_,
     timeout: 10000,
@@ -162,25 +175,26 @@ BleHelper.prototype.createBLEConnection = function (deviceId) {
       console.info('success', res)
       that.isConnected=true;
       that.getBLEDeviceServices();
+      wx.showToast({
+        title: '蓝牙已连接',
+        icon:'success'
+      })
       // that.services_.push(that.devices_[index])
     },
     fail: function (res) {
       console.info('fail', res)
-      err.catchErr(res.errCode);
+      err.catchErr(res.errCode);     
+      logUtil.showToast("连接=="+deviceId+"==失败")
     },
-    complete:function(res){
-      if (that.loadingIsShow) {
-        logUtil.hideLoading();
-        that.loadingIsShow = false;
-      }
+    complete:function(){
+      logUtil.hideLoading();
     }
-    
   })
   if (that.discovering_) {
     that.stopBluetoothDevicesDiscovery();
   }
   
-  // that.getBluetoothDevices();
+  that.getBluetoothDevices();
 }
 
 /**
@@ -193,8 +207,10 @@ BleHelper.prototype.getBLEDeviceServices = function () {
     success: function (res) {
       console.info('success', res)
       for(var i=0;i<res.services.length;i++){
+        console.log('uuid',res.services[i].uuid);
         if (res.services[i].isPrimary){
           that.getBLEDeviceCharacteristics(that.deviceId_, res.services[i].uuid);
+          return;
         }
       }
     },
@@ -224,6 +240,10 @@ BleHelper.prototype.getBLEDeviceCharacteristics = function (deviceId, serviceId)
           that.serviceId_ = serviceId
           that.characteristicId_ = item.uuid
         }
+        //监听蓝牙发送过来的值了
+        if (item.properties.notify || item.properties.indicate) {
+          that.notifyBLECharacteristicValueChange(deviceId,serviceId,item.uuid)
+        }
       })
       // for(let i=0;i<res.characteristics.length;i++){
       //   let item
@@ -234,7 +254,8 @@ BleHelper.prototype.getBLEDeviceCharacteristics = function (deviceId, serviceId)
       console.info('fail', res)
     }
   })
-  that.onBLECharacteristicValueChange();
+  
+ 
 }
 
 /**
@@ -331,21 +352,32 @@ BleHelper.prototype.closeBluetoothAdapter = function () {
 /**
  * 向低功耗蓝牙设备特征值中写入二进制数据。注意：必须设备的特征值支持 write 才可以成功调用。
  */
-BleHelper.prototype.writeBLECharacteristicValue=function(arrayBuffer){
-  let buffer = arrayBuffer;
+BleHelper.prototype.writeBLECharacteristicValue=function(arrayBuffer,oldData){
+  const that=this;
+  const delay=that.mtu_/100;
+    if(oldData!=true){
+      if(!arrayBuffer==false){
+        that.dataContainer.push(arrayBuffer);
+        if(that.dataContainer.length>1){
+          return;
+        }
+      }
+    }
+  let buffer =that.dataContainer[0];
   let pos = 0;
   let bytes = buffer.byteLength;
-  const that=this;
+ 
   if (bytes > 0) {
     let tmpBuffer;
     let tmpBuffer2;
-    if (bytes > 20) {
-      writeHelper.delay(0.25).then(() => {
+    if (bytes > that.mtu_) {
+      return writeHelper.delay(delay).then(() => {
         //将arraybuffer进行分段处理
-        tmpBuffer = buffer.slice(pos, pos + 20);
-        pos += 20;
-        bytes -= 20;
-        // logUtil.log("tmpBuffer", this.bytesToStr(tmpBuffer))
+        tmpBuffer = buffer.slice(pos, pos + that.mtu_);
+        pos += that.mtu_;
+        bytes -= that.mtu_;
+        logUtil.log("tmpBuffer", strUtil.arrayBuffer2String(tmpBuffer) );
+        // console.log('dev_id=='+that.deviceId_+"=ser_id="+that.serviceId_+"=char_id="+that.characteristicId_)
         wx.writeBLECharacteristicValue({
           deviceId: that.deviceId_,
           serviceId: that.serviceId_,
@@ -356,19 +388,21 @@ BleHelper.prototype.writeBLECharacteristicValue=function(arrayBuffer){
             logUtil.log('发送', tmpBuffer)
           },
           fail: function (res) {
+            that.dataContainer=[];
             logUtil.log('发送失败', res)
             err.catchErr(res.errCode);
           }
         })
-        logUtil.log('buffer1', tmpBuffer)
+        // logUtil.log('buffer1', tmpBuffer)
         tmpBuffer2 = buffer.slice(pos, pos + bytes);
-        return this.writeBulData(tmpBuffer2)
+        that.dataContainer[0]=tmpBuffer2;
+        return this.writeBLECharacteristicValue(tmpBuffer2,true)
       })
 
     } else {
-      return writeHelper.delay(0.25).then(() => {
+      return writeHelper.delay(delay).then(() => {
         tmpBuffer = buffer.slice(pos, pos + bytes);
-        logUtil.log('buffer2', this.bytesToStr(tmpBuffer))
+        logUtil.log('buffer2', strUtil.arrayBuffer2String(tmpBuffer) )
         pos += bytes;
         bytes -= bytes;
         wx.writeBLECharacteristicValue({
@@ -379,8 +413,19 @@ BleHelper.prototype.writeBLECharacteristicValue=function(arrayBuffer){
           success(res) {
             logUtil.log('第二次发送', res)
             logUtil.log('发送', tmpBuffer)
+            that.dataContainer.shift();
+            if(that.dataContainer.length>0){
+              return that.writeBLECharacteristicValue();
+            }
+            if(clearDataTimer!=null){
+              clearTimeout(clearDataTimer);
+            }
+            clearDataTimer=setTimeout(()=>{
+              that.dataContainer=[];
+            },10000)
           },
           fail: function (res) {
+            that.dataContainer=[];
             err.catchErr(res.errCode);
           }
         })
@@ -407,18 +452,21 @@ BleHelper.prototype.writeBLECharacteristicValue=function(arrayBuffer){
 /**
  * 设置蓝牙最大传输单元。需在 wx.createBLEConnection调用成功后调用，mtu 设置范围 (22,512)。安卓5.1以上有效
  */
-BleHelper.prototype.setBLEMTU = function () {
-  wx.setBLEMTU({
-    deviceId:this.deviceId_,
-    //最大传输单元(22,512) 区间内，单位 bytes
-    mtu:511,
-    success: function (res) {
-      console.info('success', res)
-    },
-    fail: function (res) {
-      console.info('fail', res)
-    }
-  })
+BleHelper.prototype.setBLEMTU = function (mtu) {
+  this.mtu_=mtu;
+  if(typeof(wx.setBLEMTU=='function') && (!wx.setBLEMTU==false)){
+    wx.setBLEMTU({
+      deviceId:this.deviceId_,
+      //最大传输单元(22,512) 区间内，单位 bytes
+      mtu:mtu,
+      success: function (res) {
+        console.info('success', res)
+      },
+      fail: function (res) {
+        console.info('fail', res)
+      }
+    })
+  }
 }
 
 /**
@@ -451,8 +499,12 @@ BleHelper.prototype.onBLEConnectionStateChange = function () {
  * 监听低功耗蓝牙设备的特征值变化事件。必须先启用 notifyBLECharacteristicValueChange 接口才能接收到设备推送的 notification。
  */
 BleHelper.prototype.onBLECharacteristicValueChange = function () {
+
   wx.onBLECharacteristicValueChange((res)=>{
-    console.log(`characteristic ${res.characteristicId} has changed, now is ${res.value}`)
+    // console.log( '接收',strUtil.arrayBuffer2String(res.value) )
+    app.bleListener.receiveData+=strUtil.arrayBuffer2String(res.value);
+    parse.parseArray(res.value);   
+    // console.log(`characteristic ${res.characteristicId} has changed, now is ${res.value}`)
   })
 }
 
@@ -474,16 +526,20 @@ BleHelper.prototype.offBLECharacteristicValueChange = function () {
  * 启用低功耗蓝牙设备特征值变化时的 notify 功能，订阅特征值。注意：必须设备的特征值支持 notify 或者 indicate 才可以成功调用。
    另外，必须先启用 notifyBLECharacteristicValueChange 才能监听到设备 characteristicValueChange 事件
  */
-BleHelper.prototype.notifyBLECharacteristicValueChange = function () {
+BleHelper.prototype.notifyBLECharacteristicValueChange = function (deviceId,serviceId,characteristicId) {
+  const that=this;
+  console.info('======启动接收=====');
   wx.notifyBLECharacteristicValueChange({
-    deviceId: this.deviceId_,
-    serviceId: this.serviceId_,
-    characteristicId: this.characteristicId_,
+    deviceId: deviceId,
+    serviceId: serviceId,
+    characteristicId: characteristicId,
     state: true,
     success: function(res) {
-      console.info(res)
+      console.info('启动接收',res);
+      that.onBLECharacteristicValueChange();
     },
   })
+  
 }
 
 
@@ -515,6 +571,10 @@ BleHelper.prototype.closeBLEConnection = function () {
     deviceId: this.deviceId_,
     success: function (res) {
       console.info('success', res)
+      wx.showToast({
+        title: '蓝牙已断开',
+        icon:'success'
+      })
     },
     fail: function (res) {
       console.info('fail', res)

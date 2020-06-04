@@ -1,5 +1,10 @@
 
 const base64 = require("../../utils/Base64Helper.js");
+import ParseData from '../../utils/ParseData.js'
+const strUtil = require('../../utils/StrUtil.js');
+
+var parse = new ParseData()
+
 Page({
 
   /**
@@ -56,12 +61,14 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad: function (options) {
-    wx.onSocketMessage(function (res) {
-      console.log(res.data)
-    })
+    // console.log('parse', parse.onReceiveBLE())
+    // wx.onSocketMessage(function (res) {
+    //   console.log(res.data)
+    // })
     //  this.httpConnect()
     // this.socketCommunicate()
     // this.funTest();
+    // this.udpSocket();
     this.socketTest();
   },
   socketCommunicate: function () {
@@ -119,7 +126,7 @@ Page({
       "Authorization": base64.baseEncode("icertk0016:c70902d")+""
     }
     wx.request({
-      url: 'http://rtk.ntrip.qxwz.com:8002/',
+      url: 'http://203.107.45.154:8002/',
       data: header01,
       // header:header01,
       success: function (res) {
@@ -149,13 +156,18 @@ Page({
       "Connection": "close",
       // "Authorization": base64.baseEncode("icertk0016:c70902d")+"\r\n\r\n"
     }
+    var sendData2 =
+      "GET / HTTP/1.0\r\n" +
+      "User-Agent: NTRIP GNSSInternetRadio/1.4.10\r\n" +
+      "Accept: */*\r\n" +
+      "Connection: close\r\n\r\n";
     //连接查找IP地址
     var wst = wx.connectSocket({
       url: 'wss://rtk.ntrip.qxwz.com:8002',
       // url: 'wss://echo.websocket.org',
       // protocols: ["HTTP/1.0"],
-      method:"GET",
-      header: sendData,
+      // method:"GET",
+      // header: sendData,
       timeout: 5000,
       success(res) {
         console.log("==1s==", res)
@@ -170,7 +182,7 @@ Page({
       console.log("open", res)
       //发送数据
       wst.send({
-        data: sendData,
+        data: sendData2,
         success(res) {
           console.log("==2s==", res)
         },
@@ -244,27 +256,31 @@ Page({
 
     //建立连接
     wx.connectSocket({
-      url: "ws://121.40.165.18:8800",
-    })
+      url: "ws://203.107.45.154:8002",
+      success(res) {
+        //连接成功
+        wx.onSocketOpen(function () {
+          wx.sendSocketMessage({
+            data: sendData,
+            success(res) {
+              console.log('send suc')
+              //接收数据
+              wx.onSocketMessage(function (data) {
+                console.log(data);
+              })
 
-    //连接成功
-    wx.onSocketOpen(function () {
-      wx.sendSocketMessage({
-        data: sendData,
-        success(res) {
-          console.log('send suc')
+            },
+            fail(res) {
+              console.log('send fail')
+            }
+          })
+        })
         },
-        fail(res) {
-          console.log('send fail')
+      fail(res){
+          console.log("==1f==",res)
         }
-      })
     })
-
-    //接收数据
-    wx.onSocketMessage(function (data) {
-      console.log(data);
-    })
-
+    
     //连接失败
     wx.onSocketError(function () {
       console.log('websocket连接失败！');
@@ -272,12 +288,48 @@ Page({
 
   },
   udpSocket:function(){
+    var sendData =
+      "GET / HTTP/1.0\r\n" +
+      "User-Agent: NTRIP GNSSInternetRadio/1.4.10\r\n" +
+      "Accept: */*\r\n" +
+      "Connection: close\r\n\r\n";
     var udp = wx.createUDPSocket();
-    udp.bind()
+    udp.bind(8002)
     udp.send({
-      address: '192.168.193.2',
+      address: '203.107.45.154',
       port: 8002,
-      message: 'hello, how are you'
+      family: 'IPv6',
+      message: sendData,
+
     })
+    udp.onListening((res)=>{console.log(res)});
+    udp.onMessage((res)=>{
+      console.log(res)
+      console.log(strUtil.arrayBuffer2String(res.message.data) )
+    });
+    udp.onError((res)=>{
+      console.log(res);
+    })
+
+  //   var socket = new WebSocket('ws://203.107.45.154:8002'); 
+  //   // 打开Socket 
+  //   socket.onopen = function (event) {
+
+  //     // 发送一个初始化消息
+  //     socket.send(sendData);
+
+  //     // 监听消息
+  //     socket.onmessage = function (event) {
+  //       console.log('Client received a message', event);
+  //     };
+
+  //     // 监听Socket的关闭
+  //     socket.onclose = function (event) {
+  //       console.log('Client notified socket has closed', event);
+  //     };
+
+  //     // 关闭Socket.... 
+  //     //socket.close() 
+  //   };
   }
 })

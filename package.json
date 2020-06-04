@@ -16,7 +16,5 @@
     "url": "https://github.com/zzjdreams/RTK_Measure/issues"
   },
   "homepage": "https://github.com/zzjdreams/RTK_Measure#readme",
-  "dependencies": {
-    "ol": "^6.3.1"
-  }
+  "dependencies": {}
 }

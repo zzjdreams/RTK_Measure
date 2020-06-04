@@ -59,7 +59,7 @@ page, .page {
 
 .device_list {
   display: block;
-  height: 70%;
+  height: 50%;
   /* margin-top: 0; */
   margin: auto;
   border: 1px solid #EEE;
@@ -75,7 +75,19 @@ page, .page {
   background-color: rgba(0, 0, 0, .1);
 }
 
+.page-content{
+  width: 55%;
+}
+
 .c-state1 {
   transform: rotate(0deg) scale(1) translate(55%, 0%);
   -webkit-transform: rotate(0deg) scale(1) translate(55%, 0%);
+}
+
+.inputText{
+  display: inline-block;
+  width: 100%;  
+  padding: 3%;
+  border: 1px solid #F5F5F5;
+  text-align: center;
 }
